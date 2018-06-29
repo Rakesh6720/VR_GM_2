@@ -280,6 +280,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   spherePreFab: {fileID: 1437858067169752, guid: 95767a60c4a5bfc4db0b562938ad4e5f,
     type: 2}
+  cubePreFab: {fileID: 1344007899877368, guid: bdd1c339474dbf947929d6600b0eb524, type: 2}
+  plotScale: 50
 --- !u!4 &1302389697
 Transform:
   m_ObjectHideFlags: 0

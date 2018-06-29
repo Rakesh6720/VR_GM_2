@@ -36,9 +36,10 @@ public class CsvImporter : MonoBehaviour
         //NflGradeScatterPlotter(WinnowedPlayers);
         //ThreeVscatterPlotter(WinnowedPlayers);
         LinearRegressionMaker(WinnowedPlayers);
+
     }
 
-    void LinearRegressionMaker(List<Player>WinnowedPlayers)
+    void LinearRegressionMaker(List<Player> WinnowedPlayers)
     {
         float xVal;
         float yVal;
@@ -59,7 +60,7 @@ public class CsvImporter : MonoBehaviour
         }
 
         List<float> sumXY = new List<float>();
-        for (int i = 0; i < xValues.Count; i ++)
+        for (int i = 0; i < xValues.Count; i++)
         {
             sumXY.Add(xValues[i] * yValues[i]);
         }
@@ -89,13 +90,6 @@ public class CsvImporter : MonoBehaviour
         print(a);
         float yPrime;
         List<float> yPrimeValues = new List<float>();
-        //print(xValues[1894] + " " + b + " " + a);
-
-        //for (int i = 500; i < 510; i++)
-        //{
-        //    yPrime = b * xValues[i];
-        //    print(yPrime);
-        //}
 
         foreach (float x in xValues)
         {
@@ -103,9 +97,17 @@ public class CsvImporter : MonoBehaviour
             yPrimeValues.Add(yPrime);
         }
 
-        //print(yPrimeValues[9] + " " + yPrimeValues[1000] + " " + yPrimeValues[458]);
+        //---------- the function below predicts where someone should be drafted based off their 40 time.  for example, Ameer Abdulla should have gone 116, but he went 54.  
+        //Jay Ajayi also should have went around there, but he went 147
 
-        //print("this is the count of Y prime values: " + yPrimeValues.Count);//this debug line proves list of Y Prime values is same length as list of Y values at around 3,000
+        //var ajayi = from player in Players
+        //            where player.lastName == "Gunter"
+        //            select player;
+
+        //foreach (Player p in ajayi)
+        //{
+        //    print(p.name + ", " + (b * (p.fortyYd) + a));
+        //}
 
         //let's normalize X and Y Prime
 
@@ -132,12 +134,16 @@ public class CsvImporter : MonoBehaviour
         }
 
         //now, i have to plot each x value with its corresponding Y Prime value to get the coordinates through which to draw my regression line
+        LineRenderer lineRenderer = GetComponent<LineRenderer>();
+        lineRenderer.SetPosition(0, transform.position);
+        lineRenderer.positionCount.Equals(10);
+        lineRenderer.positionCount = xNormalized.Count;
 
         for (int i = 0; i < xNormalized.Count; i++)
         {
             Vector3 xyPrimePair = new Vector3(xNormalized[i], yNormalized[i], 0f);
-            
-            cubeClone = Instantiate(cubePreFab, xyPrimePair * plotScale, Quaternion.identity) as GameObject;
+            lineRenderer.SetPosition(i, xyPrimePair*plotScale);
+            //cubeClone = Instantiate(cubePreFab, xyPrimePair * plotScale, Quaternion.identity) as GameObject;
             
         }
 
@@ -505,13 +511,15 @@ public class CsvImporter : MonoBehaviour
         {
             GameObject sphereClone = new GameObject();
             sphereClone.transform.position = new Vector3(xNormalized[i], yNormalized[i]);
+            
             scatterOrbClones.Add(sphereClone);
         }
-
+        
         //instantiate a prefab clone with the vector 3 pos
         foreach (GameObject orb in scatterOrbClones)
         {
             Instantiate(spherePreFab, orb.transform.position * plotScale, Quaternion.identity);
+            
         }
     }
 
@@ -715,6 +723,41 @@ public class CsvImporter : MonoBehaviour
             float.TryParse(row[21], out p.nflGrade);
             Players.Add(p);
         }
+
+        //TextAsset combineData = Resources.Load<TextAsset>("CombineSlimmer");
+        //string[] data = combineData.text.Split(new char[] { '#' });
+        //Debug.Log("You have " + data.Length + "rows.");
+
+        //string[] columnNames = data[0].Split(new char[] { ',' });
+        //for (int i = 1; i < data.Length - 1; i++)
+        //{
+        //    string[] row = data[i].Split(new char[] { ',' });
+
+        //    Player p = new Player();
+        //    int.TryParse(row[0], out p.year);
+        //    p.name = row[1];
+        //    p.firstName = row[2];
+        //    p.lastName = row[3];
+        //    p.position = row[4];
+        //    int.TryParse(row[5], out p.heightFeet);
+        //    int.TryParse(row[6], out p.heightInches);
+        //    float.TryParse(row[7], out p.heightInchesTotal);
+        //    int.TryParse(row[8], out p.weight);
+        //    float.TryParse(row[9], out p.fortyYd);
+        //    float.TryParse(row[10], out p.twentySs);
+        //    float.TryParse(row[11], out p.threeCone);
+        //    float.TryParse(row[12], out p.vertical);
+        //    int.TryParse(row[13], out p.broad);
+        //    int.TryParse(row[14], out p.bench);
+        //    int.TryParse(row[15], out p.round);
+        //    p.college = row[16];
+        //    int.TryParse(row[17], out p.pick);
+        //    int.TryParse(row[18], out p.pickRound);
+        //    int.TryParse(row[19], out p.pickTotal);
+        //    int.TryParse(row[20], out p.wonderLick);
+        //    float.TryParse(row[21], out p.nflGrade);
+        //    Players.Add(p);
+        //}
     }
 
     void AssignPlayerID()

@@ -61,13 +61,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Scripts\College.cs" />
     <Compile Include="Assets\Scripts\CsvImporter.cs" />
     <Compile Include="Assets\Scripts\Player.cs" />
     <Reference Include="UnityEditor.StandardEvents">
-      <HintPath>C:/Users/rbaru/OneDrive/Desktop/UnityProjects/VR_GM2_/VR_GM_2/Library/ScriptAssemblies/UnityEditor.StandardEvents.dll</HintPath>
+      <HintPath>C:/Users/rbaru/OneDrive/Desktop/UnityProjects/VR_GM2_ACTIVE/VR_GM_2/Library/ScriptAssemblies/UnityEditor.StandardEvents.dll</HintPath>
     </Reference>
     <Reference Include="Unity.PackageManagerUI.Editor">
-      <HintPath>C:/Users/rbaru/OneDrive/Desktop/UnityProjects/VR_GM2_/VR_GM_2/Library/ScriptAssemblies/Unity.PackageManagerUI.Editor.dll</HintPath>
+      <HintPath>C:/Users/rbaru/OneDrive/Desktop/UnityProjects/VR_GM2_ACTIVE/VR_GM_2/Library/ScriptAssemblies/Unity.PackageManagerUI.Editor.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.AIModule">
       <HintPath>C:/Program Files/Unity/Editor/Data/Managed/UnityEngine/UnityEngine.AIModule.dll</HintPath>

@@ -10,13 +10,16 @@ public class CsvImporter : MonoBehaviour
 
     List<Player> Players = new List<Player>();
     public GameObject spherePreFab;
+    public GameObject cubePreFab;
+    GameObject cubeClone;
     GameObject sphereClone;
+    //GameObject sphereClone;
     int j = 1;
     Dictionary<int, Player> PlayerDictionary = new Dictionary<int, Player>();
     Dictionary<int, string> collegeIndex = new Dictionary<int, string>();
     List<string> collegeNames = new List<string>();
-    Dictionary<int, int> collegeHistogramCollection = new Dictionary<int, int>();
-    int plotScale = 50;
+    List<College> collegeHistogramList = new List<College>(); //this list contains school ID, school name, and school count in combine
+    public int plotScale = 50;
 
     // Use this for initialization
     void Start()
@@ -27,8 +30,116 @@ public class CsvImporter : MonoBehaviour
         AssignPlayerID();
         CreatePlayerDictionary();
         List<Player> WinnowedPlayers = new List<Player>();
-        WinnowedPlayers = WinnowMaker();
-        MakingDatScatterPlot(WinnowedPlayers);
+        WinnowedPlayers = WinnowMaker(); //this creates the list containing the 2 fields to analyze through bivariate analysis
+        FortyScatterPlotter(WinnowedPlayers);
+        //ThreeConeScatterPlotter(WinnowedPlayers);
+        //NflGradeScatterPlotter(WinnowedPlayers);
+        //ThreeVscatterPlotter(WinnowedPlayers);
+        LinearRegressionMaker(WinnowedPlayers);
+    }
+
+    void LinearRegressionMaker(List<Player>WinnowedPlayers)
+    {
+        float xVal;
+        float yVal;
+        List<float> xValues = new List<float>();
+        List<float> yValues = new List<float>();
+
+        //first, get the x and y fields -- these fields are going to be X Axis: forty time, and Y Axis: pick total from Players in WinnowedPlayers list
+        //isolate the X and Y values in their respective lists
+        foreach (Player player in WinnowedPlayers)
+        {
+            //for each player, chop out their 40 time (Players[i].forty) and their pick total (Players[i].pickTotal
+
+            xVal = player.fortyYd;
+            yVal = player.pickTotal;
+            //push these values into their respective lists, wherein their indices will correspond to the same player
+            xValues.Add(xVal);
+            yValues.Add(yVal);
+        }
+
+        List<float> sumXY = new List<float>();
+        for (int i = 0; i < xValues.Count; i ++)
+        {
+            sumXY.Add(xValues[i] * yValues[i]);
+        }
+
+        //print(sumXY[9] + " " + sumXY[1000] + " " + sumXY[423] + " " + sumXY[2500]);// -----> THIS IS WORKING
+
+        //print("count of sum of XY: " + sumXY.Count + ", " + "count of X values: " + xValues.Count);// this debug line proves sumXY list and list of X and Y values are identical at around 3,000
+
+        float productSumXY = sumXY.Sum(); //this value holds Sigma XY
+
+        float sumXvalues = xValues.Sum(); //this value holds Sigma X
+
+        float sumYvalues = yValues.Sum(); //this value holds Sigma Y
+
+        float sampleSize = xValues.Count(); //this value holds the sample size of the population
+
+        float sigmaXSquared = sumXvalues * sumXvalues;
+
+        float bNumerator = (productSumXY - (sumXvalues * sumYvalues) / sampleSize);
+        //print(bNumerator);
+        float bDenominator = (sigmaXSquared - (sigmaXSquared / sampleSize));
+        //print(bDenominator);
+        float b = bNumerator / bDenominator; //this value holds the slope of the regression line
+        print(b);
+
+        float a = (sumYvalues - sumXvalues * b) / sampleSize; //this value holds the "a" required for the regression line equation
+        print(a);
+        float yPrime;
+        List<float> yPrimeValues = new List<float>();
+        //print(xValues[1894] + " " + b + " " + a);
+
+        //for (int i = 500; i < 510; i++)
+        //{
+        //    yPrime = b * xValues[i];
+        //    print(yPrime);
+        //}
+
+        foreach (float x in xValues)
+        {
+            yPrime = b * x + a;
+            yPrimeValues.Add(yPrime);
+        }
+
+        //print(yPrimeValues[9] + " " + yPrimeValues[1000] + " " + yPrimeValues[458]);
+
+        //print("this is the count of Y prime values: " + yPrimeValues.Count);//this debug line proves list of Y Prime values is same length as list of Y values at around 3,000
+
+        //let's normalize X and Y Prime
+
+        //locate the X-MAX value and the X-MIN value
+        float xMin = xValues.Min();
+        float xMax = xValues.Max();
+        //locate the Y-MAX value and the Y-MIN value
+        float yMin = yPrimeValues.Min();
+        float yMax = yPrimeValues.Max();
+        //normalize each value so that your scale is on a 0 - 1 range
+        //normalize X Axis by dividing (x-xMin) / (xMax - xMin) 
+        List<float> xNormalized = new List<float>();
+        foreach (float x in xValues)
+        {
+            //this creates a list of normalized X Values
+            xNormalized.Add((x - xMin) / (xMax - xMin));
+        }
+        //normalize Y Axis by dividing (y-yMin) / (yMax - yMin)
+        List<float> yNormalized = new List<float>();
+        foreach (float y in yPrimeValues)
+        {
+            //this creates a list of normalized Y Values
+            yNormalized.Add((y - yMin) / (yMax - yMin));
+        }
+
+        //now, i have to plot each x value with its corresponding Y Prime value to get the coordinates through which to draw my regression line
+
+        for (int i = 0; i < xNormalized.Count; i++)
+        {
+            Vector3 xyPrimePair = new Vector3(xNormalized[i], yNormalized[i], 0f);
+            
+            cubeClone = Instantiate(cubePreFab, xyPrimePair * plotScale, Quaternion.identity) as GameObject;
+            
+        }
 
     }
 
@@ -51,31 +162,76 @@ public class CsvImporter : MonoBehaviour
         //create the values for your college Histogram graph
     } //this method holds test functions to check functionality of other methods using the PRINT function in the Unity Editor
 
-    public Dictionary<int,int> CreateCollegeHistogram() //this method will return a dictionary that you have to crossreference with the collegeIndex to match college name with its count in this returned dictionary
+    public void CreateCollegeHistogram() //this method will return a dictionary that you have to crossreference with the collegeIndex to match college name with its count in this returned dictionary
     {
         //take the list that has every college in it
-        //make this list a dictionary where the key value is string collegeName, and the value is the number of times the college name appears in playerDictionary
+        //make this list a dictionary where the key value is int collegeIndexKey, and the value is the number of times the college name appears in playerDictionary
         //run that list against the player dictionary
         //every time there is a ping and increase the count of the college
+
         Dictionary<int, int> collegeHistogramDictionary = new Dictionary<int, int>();
-            
-        foreach(KeyValuePair<int, string> pair in collegeIndex)
+       
+        foreach (var college in collegeIndex)
         {
             int count = 0;
-            string collegeName = pair.Value;
-
-            for (int i = 0; i < PlayerDictionary.Count; i++)
+            for (int i = 0; i < Players.Count; i++)
             {
-                if (pair.Value == PlayerDictionary[i].college)
+                if (String.Equals(college.Value, Players[i].college, StringComparison.InvariantCulture))
                 {
                     count++;
                 }
+            }
+            collegeHistogramDictionary.Add(college.Key, count);
+        }
 
-                collegeHistogramDictionary.Add(pair.Key, count); //this stores the key of the college and its count in the playerdictionary in its own dictionary
+        //after storing key school ID and value count (# times school appears in the spreadsheet) in its own dictionary
+        //cross reference that dictionary with the college index dictionary 
+        //this will connect the school ID, school name, and its frequency in the data table
+
+        foreach (var a in collegeHistogramDictionary)
+        {
+            //print(a.Key + ", " + a.Value);
+
+            for (int i = 0; i < collegeIndex.Count; i++)
+            {
+                if (collegeIndex.ContainsKey(a.Key))
+                {
+                    //print(collegeIndex.Keys.ElementAt(i) + ", " + collegeIndex[collegeIndex.Keys.ElementAt(i)] + ", " +a.Value);
+                    College college = new College(collegeIndex.Keys.ElementAt(i), collegeIndex[collegeIndex.Keys.ElementAt(i)], a.Value);
+                    collegeHistogramList.Add(college);
+                }
             }
         }
 
-        return collegeHistogramDictionary; //this method returns a dictionary that has key value college ID number and value value of college's count in the data set
+        List<College> distinct = collegeHistogramList.Distinct().ToList();
+        int ymax;
+        foreach (College c in distinct)
+        {
+            for (int i = 0; i < distinct.Count; i++)
+            {
+                if (i != 0)
+                {
+                    if (distinct[i].count > distinct[i - 1].count)
+                    {
+                        ymax = distinct[i].count;
+                        print(ymax);
+                    }
+                }
+            }
+        }
+        
+
+
+        //must normalize y scale and x scale
+
+        //float x = 1F;
+        //foreach (College c in distinct)
+        //{
+        //    GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        //    cube.transform.position = new Vector3(x, 0f, 0f);
+        //    cube.transform.localScale = new Vector3(1f, c.count, 1f);
+        //    x = x + 0.5F;
+        //}
     }
 
     public List<Player> WinnowMaker() //this function lets you choose which two variables to compare for your regression by elminating the zeroes
@@ -86,18 +242,220 @@ public class CsvImporter : MonoBehaviour
                        where Player.pickTotal != 0 && Player.fortyYd != 0
                        select Player;
 
+        //var noZeroes = from Player in Players
+        //               where Player.pickTotal != 0 && Player.threeCone != 0
+        //               select Player;
+
+        //var noZeroes = from Player in Players
+        //               where Player.pickTotal != 0 && Player.nflGrade != 0
+        //               select Player;
+
+        //var noZeroes = from Player in Players
+        //               where Player.pickTotal != 0 && Player.fortyYd != 0 && Player.bench != 0
+        //               select Player;
+
         foreach (var player in noZeroes)
         {
             WinnowedPlayers.Add(player);//this will publish the list of Players without "0" in both Forty and PickTotal column
         }
 
-        print(WinnowedPlayers.Count); // this is working
-        print(WinnowedPlayers[0].name + "," + WinnowedPlayers[0].fortyYd + "," + WinnowedPlayers[0].pickTotal); // this is working: Jared Abbrederis,4.5,176
+        //print(WinnowedPlayers.Count); // this is working
+        //print(WinnowedPlayers[0].name + "," + WinnowedPlayers[0].fortyYd + "," + WinnowedPlayers[0].pickTotal); // this is working: Jared Abbrederis,4.5,176
 
         return WinnowedPlayers;
     }
 
-    void MakingDatScatterPlot(List<Player>WinnowedPlayers) // this function will create a scatterplot from the linq querred  X and Y values in WinnowedPlayers
+    void ThreeVscatterPlotter(List<Player> WinnowedPlayers)
+    {
+        float xVal;
+        float yVal;
+        float zVal;
+        List<float> xValues = new List<float>();
+        List<float> yValues = new List<float>();
+        List<float> zValues = new List<float>();
+
+        //first, get the x and y fields -- these fields are going to be X Axis: forty time, and Y Axis: pick total from Players in WinnowedPlayers list
+        //isolate the X and Y values in their respective lists
+        foreach (Player player in WinnowedPlayers)
+        {
+            //for each player, chop out their 40 time (Players[i].forty) and their pick total (Players[i].pickTotal
+
+            xVal = player.fortyYd;
+            zVal = player.bench;
+            yVal = player.pickTotal;
+            //push these values into their respective lists, wherein their indices will correspond to the same player
+            xValues.Add(xVal);
+            yValues.Add(yVal);
+            zValues.Add(zVal);
+        }
+
+        //locate the X-MAX value and the X-MIN value
+        float xMin = xValues.Min();
+        float xMax = xValues.Max();
+        //locate the Y-MAX value and the Y-MIN value
+        float yMin = yValues.Min();
+        float yMax = yValues.Max();
+        //locate the Z-MAX value and the Z-MIN value
+        float zMin = zValues.Min();
+        float zMax = zValues.Max();
+        //normalize each value so that your scale is on a 0 - 1 range
+        //normalize X Axis by dividing (x-xMin) / (xMax - xMin) 
+        List<float> xNormalized = new List<float>();
+        foreach (float x in xValues)
+        {
+            //this creates a list of normalized X Values
+            xNormalized.Add((x - xMin) / (xMax - xMin));
+        }
+        //normalize Y Axis by dividing (y-yMin) / (yMax - yMin)
+        List<float> yNormalized = new List<float>();
+        foreach (float y in yValues)
+        {
+            //this creates a list of normalized Y Values
+            yNormalized.Add((y - yMin) / (yMax - yMin));
+        }
+
+        List<float> zNormalized = new List<float>();
+        foreach (float z in zValues)
+        {
+            //this creates a list of normalized Z Values
+            zNormalized.Add((z - zMin) / (zMax - zMin));
+        }
+        //create a clone of your preFab and instantiate it
+        List<GameObject> scatterOrbClones = new List<GameObject>();
+
+        for (int i = 0; i < xNormalized.Count; i++)
+        {
+            GameObject sphereClone = new GameObject();
+            sphereClone.transform.position = new Vector3(xNormalized[i], yNormalized[i], zNormalized[i]);
+            scatterOrbClones.Add(sphereClone);
+        }
+
+        //instantiate a prefab clone with the vector 3 pos
+        foreach (GameObject orb in scatterOrbClones)
+        {
+            Instantiate(spherePreFab, orb.transform.position * plotScale, Quaternion.identity);
+        }
+    }
+
+    void NflGradeScatterPlotter(List<Player>WinnowedPlayers)
+    {
+        float xVal;
+        float yVal;
+        List<float> xValues = new List<float>();
+        List<float> yValues = new List<float>();
+
+        //first, get the x and y fields -- these fields are going to be X Axis: forty time, and Y Axis: pick total from Players in WinnowedPlayers list
+        //isolate the X and Y values in their respective lists
+        foreach (Player player in WinnowedPlayers)
+        {
+            //for each player, chop out their 40 time (Players[i].forty) and their pick total (Players[i].pickTotal
+
+            xVal = player.nflGrade;
+            yVal = player.pickTotal;
+            //push these values into their respective lists, wherein their indices will correspond to the same player
+            xValues.Add(xVal);
+            yValues.Add(yVal);
+        }
+
+        //locate the X-MAX value and the X-MIN value
+        float xMin = xValues.Min();
+        float xMax = xValues.Max();
+        //locate the Y-MAX value and the Y-MIN value
+        float yMin = yValues.Min();
+        float yMax = yValues.Max();
+        //normalize each value so that your scale is on a 0 - 1 range
+        //normalize X Axis by dividing (x-xMin) / (xMax - xMin) 
+        List<float> xNormalized = new List<float>();
+        foreach (float x in xValues)
+        {
+            //this creates a list of normalized X Values
+            xNormalized.Add((x - xMin) / (xMax - xMin));
+        }
+        //normalize Y Axis by dividing (y-yMin) / (yMax - yMin)
+        List<float> yNormalized = new List<float>();
+        foreach (float y in yValues)
+        {
+            //this creates a list of normalized Y Values
+            yNormalized.Add((y - yMin) / (yMax - yMin));
+        }
+        //create a clone of your preFab and instantiate it
+        List<GameObject> scatterOrbClones = new List<GameObject>();
+
+        for (int i = 0; i < xNormalized.Count; i++)
+        {
+            GameObject sphereClone = new GameObject();
+            sphereClone.transform.position = new Vector3(xNormalized[i], yNormalized[i]);
+            scatterOrbClones.Add(sphereClone);
+        }
+
+        //instantiate a prefab clone with the vector 3 pos
+        foreach (GameObject orb in scatterOrbClones)
+        {
+            Instantiate(spherePreFab, orb.transform.position * plotScale, Quaternion.identity);
+        }
+    }
+
+    void ThreeConeScatterPlotter(List<Player>WinnowedPlayers)
+    {
+        float xVal;
+        float yVal;
+        List<float> xValues = new List<float>();
+        List<float> yValues = new List<float>();
+
+        //first, get the x and y fields -- these fields are going to be X Axis: forty time, and Y Axis: pick total from Players in WinnowedPlayers list
+        //isolate the X and Y values in their respective lists
+        foreach (Player player in WinnowedPlayers)
+        {
+            //for each player, chop out their 40 time (Players[i].forty) and their pick total (Players[i].pickTotal
+
+            xVal = player.threeCone;
+            yVal = player.pickTotal;
+            //push these values into their respective lists, wherein their indices will correspond to the same player
+            xValues.Add(xVal);
+            yValues.Add(yVal);
+        }
+
+
+
+        //locate the X-MAX value and the X-MIN value
+        float xMin = xValues.Min();
+        float xMax = xValues.Max();
+        //locate the Y-MAX value and the Y-MIN value
+        float yMin = yValues.Min();
+        float yMax = yValues.Max();
+        //normalize each value so that your scale is on a 0 - 1 range
+        //normalize X Axis by dividing (x-xMin) / (xMax - xMin) 
+        List<float> xNormalized = new List<float>();
+        foreach (float x in xValues)
+        {
+            //this creates a list of normalized X Values
+            xNormalized.Add((x - xMin) / (xMax - xMin));
+        }
+        //normalize Y Axis by dividing (y-yMin) / (yMax - yMin)
+        List<float> yNormalized = new List<float>();
+        foreach (float y in yValues)
+        {
+            //this creates a list of normalized Y Values
+            yNormalized.Add((y - yMin) / (yMax - yMin));
+        }
+        //create a clone of your preFab and instantiate it
+        List<GameObject> scatterOrbClones = new List<GameObject>();
+
+        for (int i = 0; i < xNormalized.Count; i++)
+        {
+            GameObject sphereClone = new GameObject();
+            sphereClone.transform.position = new Vector3(xNormalized[i], yNormalized[i]);
+            scatterOrbClones.Add(sphereClone);
+        }
+
+        //instantiate a prefab clone with the vector 3 pos
+        foreach (GameObject orb in scatterOrbClones)
+        {
+            Instantiate(spherePreFab, orb.transform.position * plotScale, Quaternion.identity);
+        }
+    }
+
+    void FortyScatterPlotter(List<Player>WinnowedPlayers) // this function will create a scatterplot from the linq querred  X and Y values in WinnowedPlayers
     {
         float xVal;
         float yVal;
@@ -109,6 +467,7 @@ public class CsvImporter : MonoBehaviour
         foreach (Player player in WinnowedPlayers)
         {
             //for each player, chop out their 40 time (Players[i].forty) and their pick total (Players[i].pickTotal
+            
             xVal = player.fortyYd;
             yVal = player.pickTotal;
             //push these values into their respective lists, wherein their indices will correspond to the same player
@@ -275,9 +634,9 @@ public class CsvImporter : MonoBehaviour
         double corrCoeff = corrCoeffNum / corrCoeffDen; //this is the final value of the correlation coefficient
 
         return corrCoeff;
-    }
+    }// this function calculates the correlation AND creates the list of players to evaluate for bivariate analysis
 
-    void CreateCollegeList()
+    void CreateCollegeIndex()
     {
         int count = 0;
         foreach (KeyValuePair<int,Player> player in PlayerDictionary)
